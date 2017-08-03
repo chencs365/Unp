@@ -4,6 +4,8 @@
 #include <sys/types.h>
 #include<netinet/in.h>
 
+ssize_t writen(int fd, const void * buf, size_t n);
+
 int
 main()
 {
@@ -35,8 +37,13 @@ main()
 		return 1;
 	}
 
+	/* send line */
 	char buf[1024];
-	char *ptr = buf;
+	gets(buf);
+	writen(clifd, buf, strlen(buf) + 1);
+
+	char buf2[1024];
+	char *ptr = buf2;
 	int nr = 0;
 	while(1){
 		int n = read(clifd, buf, sizeof(buf));
@@ -57,4 +64,26 @@ main()
 
 	printf("read %s form server\n", buf);
 	exit(0);
+}
+
+ssize_t
+writen(int fd, const void * buf, size_t n)
+{
+	size_t nleft = n;
+	void * ptr = buf;
+
+	while(nleft > 0){
+		size_t nw = write(fd, ptr, nleft);
+		if(nw < 0){
+			if(errno == EINTR){
+				continue;
+			}
+			return nw;
+		}
+
+		nleft -= nw;
+		ptr += nw;
+	}
+
+	return n - nleft;
 }
